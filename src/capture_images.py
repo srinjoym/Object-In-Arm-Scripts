@@ -31,34 +31,105 @@ class CaptureImages:
     self.current_execution = 1
     self.lin_act_state = control_msgs.msg.JointTrajectoryControllerState()
     self.file_name=""
+    self.bounding_box_scale = [0.3,0.6,0.75]
+    self.bounding_box_coordinates = [0.9,-0.3,0.65] #relative to base link
+    self.num_points = [2,3,3]
 
   def publish_point(self, pose,color):
     self.markerArray = generate_point(self.markerArray,pose,color)
+    self.publisher.publish(self.markerArray)
+
+  def publish_box(self):
+    marker = Marker()
+    marker.type = marker.CUBE
+    marker.action = marker.ADD
+    marker.scale.x = self.bounding_box_scale[0]
+    marker.scale.y = self.bounding_box_scale[1]
+    marker.scale.z = self.bounding_box_scale[2]
+    marker.color.a = 0.1
+    marker.color.b = 1
+    marker.pose.position.x = self.bounding_box_coordinates[0]+(self.bounding_box_scale[0]/2.0)
+    marker.pose.position.y = self.bounding_box_coordinates[1]+(self.bounding_box_scale[1]/2.0)
+    marker.pose.position.z = self.bounding_box_coordinates[2]+(self.bounding_box_scale[2]/2.0)
+    marker.pose.orientation.w = 1
+    marker.header.frame_id = "/base_link"
+    # print self.marker
+    # markerArray = MarkerArray()
+    self.markerArray.markers.append(marker)
+    # print "marker array"
     
+    id = 0
+    for m in self.markerArray.markers:
+      m.id = id
+      id += 1
 
-  def log(self,pose):
-
-      with open(self.file_name, 'a+') as f:
-        f.write("\nPicture %i"%int(self.get_next_pic())+"\nPosition\n"+pose.pose.position+"\nOrientation\n"+pose.pose.orientation+"\n"+"\nTime\n"+pose.header.stamp)
+    self.publisher.publish(self.markerArray)
+    
+  def log(self,pose,id,status):
+      if (status):
+        with open(self.file_name, 'a+') as f:
+          f.write("\nPicture %i"%id+"\nPosition\n"+str(pose.pose.position)+"\nOrientation\n"+str(pose.pose.orientation)+"\n")
+      else:
+        with open(self.file_name, 'a+') as f:
+          f.write("\nFailed Picture %i"%id+"\nPosition\n"+str(pose.pose.position)+"\nOrientation\n"+str(pose.pose.orientation)+"\n")
       with open(self.file_name, 'a+') as f:
             f.write("*************************************")
 
-  def generate_point(self):
-    return self.arm.group[0].get_random_pose("right_ee_link")
+  def calc_orientation(self,angle,tilt_angle,rotation):
+    quaternion = tf.transformations.quaternion_from_euler(radians(angle),radians(-90), 0)
+    quaternion2 = tf.transformations.quaternion_from_euler(0,radians(rotation), 0)
+    quaternion = tf.transformations.quaternion_multiply(quaternion,tf.transformations.quaternion_inverse(quaternion2))
+    return quaternion
+
 
   def execute_movement(self):
+    counter = 0
+    self.publish_box()
+    quaternion = tf.transformations.quaternion_from_euler(0,radians(-90),0)
+    z = self.bounding_box_coordinates[2]
+    while(z<(self.bounding_box_coordinates[2]+self.bounding_box_scale[2])+0.05):
+      print "running outer loop"
+      x = self.bounding_box_coordinates[0]
+      while(x<(self.bounding_box_coordinates[0]+self.bounding_box_scale[0])+0.05):
+        y = self.bounding_box_coordinates[1]
+        while(y<(self.bounding_box_coordinates[1]+self.bounding_box_scale[1])+0.05):
+          counter+=1
+          for rotation in range(-20,21,20):
+          # for tilt_angle in range(0,1,10): 
+            for angle in range(-90,0,45):
+              quaternion = self.calc_orientation(angle,0,rotation)
+              pose = geometry_msgs.msg.Pose()
+              pose.position.x  = x
+              pose.position.y = y
+              pose.position.z = z
+              pose.orientation.x = quaternion[0]
+              pose.orientation.y = quaternion[1]
+              pose.orientation.z = quaternion[2]
+              pose.orientation.w = quaternion[3]
 
-    ik = self.arm.get_IK(self.generate_point().pose)
-    plan = self.arm.plan_jointTargetInput(ik)
+              ik = self.arm.get_IK(pose)
+              plan = self.arm.plan_jointTargetInput(ik)
 
-    if(plan!=None):
-      self.arm.group[0].execute(plan)
+              if(plan!=None):
+                print "executing pose"
+                print pose
+                self.publish_point(pose,[0,1,0])
+                self.capture_position(counter,True)
+                self.arm.group[0].execute(plan)
+              else:
+                self.capture_position(counter,False)
+                self.publish_point(pose,[1,0,0])
+                print "failed pose"
+                print pose
+              
+          y+=(self.bounding_box_scale[1]/self.num_points[1])
+        x+=(self.bounding_box_scale[0]/self.num_points[0])
+      z+=(self.bounding_box_scale[2]/self.num_points[2])
 
-    pass
 
-  def capture_position(self):
+  def capture_position(self,id,status):
 
-    self.log(self.arm.group[0].get_current_pose())
+    self.log(self.arm.group[0].get_current_pose(),id,status)
       
 
 
@@ -83,9 +154,9 @@ def main():
 
     with open(capture_img.file_name, 'w+') as f:
       pass
-    while not rospy.is_shutdown():
+    if not rospy.is_shutdown():
       capture_img.execute_movement()
-      capture_img.capture_position()
+      #capture_img.capture_position()
 
     
 

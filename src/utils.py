@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import geometry_msgs.msg
+from interactive_markers.interactive_marker_server import *
+from visualization_msgs.msg import *
 
 def generate_point(markerArray, pose,color):
     marker = Marker()
@@ -18,7 +21,7 @@ def generate_point(markerArray, pose,color):
     marker.pose.orientation.x = pose.orientation.x
     marker.pose.orientation.y = pose.orientation.y
     marker.pose.orientation.z = pose.orientation.z
-    marker.header.frame_id = "/linear_actuator_link"
+    marker.header.frame_id = "/base_link"
     # print self.marker
     # markerArray = MarkerArray()
     markerArray.markers.append(marker)
@@ -34,3 +37,5 @@ def generate_point(markerArray, pose,color):
     # print self.markerArray
 
     return markerArray
+
+    

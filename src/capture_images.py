@@ -34,8 +34,8 @@ class CaptureImages:
     self.current_execution = 1
     self.lin_act_state = control_msgs.msg.JointTrajectoryControllerState()
     self.file_name=""
-    self.bounding_box_scale = [0.4,0.6,0.65]
-    self.bounding_box_coordinates = [0.7,-0.3,0.8] #relative to base link
+    self.bounding_box_scale = [0.4,0.6,0.55]
+    self.bounding_box_coordinates = [0.7,-0.3,0.9] #relative to base link
     self.num_points = [2,2,2]
     self.failed_points_new = []
     self.failed_points_old = []
@@ -93,19 +93,25 @@ class CaptureImages:
     self.publish_box()
     quaternion = tf.transformations.quaternion_from_euler(0,radians(-90),0)
     z = self.bounding_box_coordinates[2]
+    height_ct = -1
     while(z<(self.bounding_box_coordinates[2]+self.bounding_box_scale[2])+0.05):
+      height_ct += 1
       print "running outer loop"
       x = self.bounding_box_coordinates[0]
+      depth_ct = -1
       while(x<(self.bounding_box_coordinates[0]+self.bounding_box_scale[0])+0.05):
+        depth_ct += 1
         y = self.bounding_box_coordinates[1]
+        width_ct = 0
         while(y<(self.bounding_box_coordinates[1]+self.bounding_box_scale[1])+0.05):
           
-          for rotation in range(-20,21,20):
-          #for rotation in range(0,1,20):
-            for angle in range(-45,46,45):
-            #for angle in range(0,1,45):
+          #for rotation in range(-20,21,20):
+          for rotation in range(0,1,20):
+            #for angle in range(-45,46,45):
+            for angle in range(0,1,45):
               if(counter not in self.failed_points_old):
-
+                inc = self.bounding_box_scale[2] / (2*self.num_points[2])
+                
                 quaternion = self.calc_orientation(angle,0,rotation)
                 pose = geometry_msgs.msg.Pose()
                 pose.position.x  = x
@@ -115,10 +121,15 @@ class CaptureImages:
                 pose.orientation.y = quaternion[1]
                 pose.orientation.z = quaternion[2]
                 pose.orientation.w = quaternion[3]
-
+                
+                if height_ct == 0 and depth_ct == 0:  
+                  pose.position.z += inc
+                elif height_ct == 2 and depth_ct == 0:
+                  pose.position.z -= inc
+                  
                 ik = self.arm.get_IK(pose)
                 plan = self.arm.plan_jointTargetInput(ik)
-                print plan
+                #print plan
                 if(not self.is_failure(plan)):
                   print "executing pose"
                   
@@ -192,7 +203,7 @@ def main():
     with open(capture_img.file_name, 'w+') as f:
       pass
     if not rospy.is_shutdown():
-      #capture_img.get_failed()
+      capture_img.get_failed()
       capture_img.execute_movement()
       capture_img.dump_failed()
       #capture_img.capture_position()

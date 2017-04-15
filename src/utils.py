@@ -38,4 +38,39 @@ def generate_point(markerArray, pose,color):
 
     return markerArray
 
+def publish_box(markerArray,bounding_box_coordinates,bounding_box_scale):
+    marker = Marker()
+    marker.type = marker.CUBE
+    marker.action = marker.ADD
+    marker.scale.x = bounding_box_scale[0]
+    marker.scale.y = bounding_box_scale[1]
+    marker.scale.z = bounding_box_scale[2]
+    marker.color.a = 0.1
+    marker.color.b = 1
+    marker.pose.position.x = bounding_box_coordinates[0]+(bounding_box_scale[0]/2.0)
+    marker.pose.position.y = bounding_box_coordinates[1]+(bounding_box_scale[1]/2.0)
+    marker.pose.position.z = bounding_box_coordinates[2]+(bounding_box_scale[2]/2.0)
+    marker.pose.orientation.w = 1
+    marker.header.frame_id = "/base_link"
+    # print self.marker
+    # markerArray = MarkerArray()
+    markerArray.markers.append(marker)
+    # print "marker array"
     
+    id = 0
+    for m in markerArray.markers:
+      m.id = id
+      id += 1
+
+    #self.publisher.publish(self.markerArray)
+    return markerArray
+
+def util_log(file_name,pose,id,status):
+      if (status):
+        with open(file_name, 'a+') as f:
+          f.write("\nSuccess Picture %i"%id+"\nPosition\n"+str(pose.pose.position)+"\nOrientation\n"+str(pose.pose.orientation)+"\n")
+      else:
+        with open(file_name, 'a+') as f:
+          f.write("\nFailed Picture %i"%id+"\nPosition\n"+str(pose.pose.position)+"\nOrientation\n"+str(pose.pose.orientation)+"\n")
+      with open(file_name, 'a+') as f:
+            f.write("*************************************")

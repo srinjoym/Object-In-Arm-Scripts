@@ -23,7 +23,7 @@ from os import listdir
 
 class ArmMoveIt:
 
-  def __init__(self, planning_frame='odom', default_planner="RRTConnectkConfigDefault"):
+  def __init__(self, planning_frame='base_link', default_planner="RRTConnectkConfigDefault"):
 
     # Make sure the moveit service is up and running
     rospy.logwarn("Waiting for MoveIt! to load")
@@ -93,7 +93,7 @@ class ArmMoveIt:
 
     wkPose = geometry_msgs.msg.PoseStamped()
     if root is None:
-      wkPose.header.frame_id = 'odom' # name:odom
+      wkPose.header.frame_id = 'base_link' # name:odom
     else:
       wkPose.header.frame_id = root
 

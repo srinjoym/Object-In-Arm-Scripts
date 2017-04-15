@@ -54,7 +54,13 @@ class CollisionObject:
   
  
   def publish_collision_object(self):
-    
+    grip_joints = ["right_ee_link","right_ee_base","right_robotiq_85_right_knuckle_link",
+    "right_robotiq_85_base_link","right_robotiq_85_left_finger_link",
+    "right_robotiq_85_left_finger_tip_link","right_robotiq_85_left_inner_knuckle_link",
+    "right_robotiq_85_left_knuckle_link","right_robotiq_85_right_finger_link",
+    "right_robotiq_85_right_finger_tip_link","right_robotiq_85_right_inner_knuckle_link",
+    "right_robotiq_85_right_knuckle_link"]
+
     right_pose = geometry_msgs.msg.PoseStamped()
     right_pose.header.frame_id = "linear_actuator_link"
     right_pose.pose.position.x = 0.1;
@@ -78,11 +84,25 @@ class CollisionObject:
     table_pose.pose.orientation.w = 1;
 
     table_scale = [4,4,0.4]
+
+    obj = geometry_msgs.msg.PoseStamped()
+    obj.header.frame_id = "right_ee_link"
+    obj.pose.position.x = 0;
+    obj.pose.position.y = 0;
+    obj.pose.position.z = 0;
+    obj.pose.orientation.x = 0;
+    obj.pose.orientation.y = 0;
+    obj.pose.orientation.z = 0;
+    obj.pose.orientation.w = 1;
+
+    obj_scale = [.2,.2,.2]
     
 
     self.scene.add_box("table_leg",right_pose,right_scale)
     rospy.sleep(5)
     self.scene.add_box("right_arm",table_pose,table_scale)
+    rospy.sleep(5)
+    self.scene.attach_box("right_ee_link","object",obj,obj_scale,grip_joints)
     rospy.sleep(5)
     #self.scene.add_box("table",leg_pose,leg_scale)
     #rospy.sleep(2)

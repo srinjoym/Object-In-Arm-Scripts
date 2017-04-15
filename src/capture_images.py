@@ -18,13 +18,14 @@ import tf
 import tf_conversions
 from arm_moveit import *
 from utils import *
+import std_srvs.srv
 import random
 import json
 
 class CaptureImages:
 
   def __init__(self):
-    #rospy.wait_for_service('image_view/save')
+    rospy.wait_for_service('image_saver/save')
     topic = 'visualization_marker_array'
     self.publisher = rospy.Publisher(topic, MarkerArray)
     rospy.sleep(2)
@@ -33,9 +34,9 @@ class CaptureImages:
     self.current_execution = 1
     self.lin_act_state = control_msgs.msg.JointTrajectoryControllerState()
     self.file_name=""
-    self.bounding_box_scale = [0.3,0.6,0.75]
-    self.bounding_box_coordinates = [0.9,-0.3,0.65] #relative to base link
-    self.num_points = [1,2,2]
+    self.bounding_box_scale = [0.4,0.6,0.65]
+    self.bounding_box_coordinates = [0.7,-0.3,0.8] #relative to base link
+    self.num_points = [2,2,2]
     self.failed_points_new = []
     self.failed_points_old = []
 
@@ -88,7 +89,7 @@ class CaptureImages:
 
   def execute_movement(self):
     counter = 0
-
+    image_counter = 0
     self.publish_box()
     quaternion = tf.transformations.quaternion_from_euler(0,radians(-90),0)
     z = self.bounding_box_coordinates[2]
@@ -117,26 +118,35 @@ class CaptureImages:
 
                 ik = self.arm.get_IK(pose)
                 plan = self.arm.plan_jointTargetInput(ik)
-
-                if(plan!=None):
+                print plan
+                if(not self.is_failure(plan)):
                   print "executing pose"
+                  
+                  
                   print pose
                   self.publish_point(pose,[0,1,0])
-                  self.capture_position(counter,True)
+                  self.capture_position(image_counter,True)
                   #self.arm.group[0].execute(plan)
+                  image_counter+=1
+                  self.capture_image()
                 else:
-                  self.capture_position(counter,False)
+                  #self.capture_position(counter,False)
                   self.publish_point(pose,[1,0,0])
                   self.failed_points_new.append(counter)
                   print "failed pose"
                   print pose
-
+                  #image_counter+=1
+                
               counter+=1
               
           y+=(self.bounding_box_scale[1]/self.num_points[1])
         x+=(self.bounding_box_scale[0]/self.num_points[0])
       z+=(self.bounding_box_scale[2]/self.num_points[2])
 
+  def is_failure(self,plan):
+    if (plan is None or not plan.joint_trajectory.header.frame_id):
+      return True
+    return False   
 
   def capture_position(self,id,status):
 
@@ -154,9 +164,8 @@ class CaptureImages:
 
   def capture_image(self):
     try:
-      image = rospy.ServiceProxy('image_view/save', AddTwoInts)
-      resp1 = image()
-      return resp1
+      image = rospy.ServiceProxy('image_saver/save', std_srvs.srv.Empty)
+      image()
     except rospy.ServiceException, e:
       print "Service call failed: %s"%e
 
@@ -183,9 +192,9 @@ def main():
     with open(capture_img.file_name, 'w+') as f:
       pass
     if not rospy.is_shutdown():
-      capture_img.get_failed()
+      #capture_img.get_failed()
       capture_img.execute_movement()
-      #capture_img.dump_failed()
+      capture_img.dump_failed()
       #capture_img.capture_position()
 
     

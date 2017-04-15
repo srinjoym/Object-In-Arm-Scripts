@@ -69,27 +69,17 @@ class CollisionObject:
     
     table_pose = geometry_msgs.msg.PoseStamped()
     table_pose.header.frame_id = "base_link"
-    table_pose.pose.position.x = 0.6+0.8;
+    table_pose.pose.position.x = 0;
     table_pose.pose.position.y = 0;
-    table_pose.pose.position.z = .4;
+    table_pose.pose.position.z = 0;
     table_pose.pose.orientation.x = 0;
     table_pose.pose.orientation.y = 0;
     table_pose.pose.orientation.z = 0;
     table_pose.pose.orientation.w = 1;
 
-    table_scale = [0.6,1.23,.9]
+    table_scale = [4,4,0.4]
     
-    leg_pose = geometry_msgs.msg.PoseStamped()
-    leg_pose.header.frame_id = "linear_actuator_link"
-    leg_pose.pose.position.x = 1.2;
-    leg_pose.pose.position.y = 0;
-    leg_pose.pose.position.z = -1;
-    leg_pose.pose.orientation.x = 0;
-    leg_pose.pose.orientation.y = 0;
-    leg_pose.pose.orientation.z = 0;
-    leg_pose.pose.orientation.w = 1;
 
-    leg_scale = [0.05,0.05,3]
     self.scene.add_box("table_leg",right_pose,right_scale)
     rospy.sleep(5)
     self.scene.add_box("right_arm",table_pose,table_scale)

@@ -95,14 +95,42 @@ class CollisionObject:
     obj.pose.orientation.z = 0;
     obj.pose.orientation.w = 1;
 
-    obj_scale = [.2,.2,.2]
+    obj_scale = [.25,.25,.25]
     
+    back_pose = geometry_msgs.msg.PoseStamped()
+    back_pose.header.frame_id = "base_link"
+    back_pose.pose.position.x = 0;
+    back_pose.pose.position.y = 0;
+    back_pose.pose.position.z = 0;
+    back_pose.pose.orientation.x = 0;
+    back_pose.pose.orientation.y = 0;
+    back_pose.pose.orientation.z = 0;
+    back_pose.pose.orientation.w = 1;
 
-    self.scene.add_box("table_leg",right_pose,right_scale)
-    rospy.sleep(5)
+    back_scale = [0.5,4,4]
+    
+    lin_pose = geometry_msgs.msg.PoseStamped()
+    lin_pose.header.frame_id = "right_shoulder_link"
+    lin_pose.pose.position.x = 0;
+    lin_pose.pose.position.y = 0;
+    lin_pose.pose.position.z = 0;
+    lin_pose.pose.orientation.x = 0;
+    lin_pose.pose.orientation.y = 0;
+    lin_pose.pose.orientation.z = 0;
+    lin_pose.pose.orientation.w = 1;
+
+    lin_scale = [0.2,0.2,0.3]
+    
+    
+    
     self.scene.add_box("right_arm",table_pose,table_scale)
     rospy.sleep(5)
+    
     self.scene.attach_box("right_ee_link","object",obj,obj_scale,grip_joints)
+    rospy.sleep(5)
+    self.scene.add_box("back",back_pose,back_scale)
+    rospy.sleep(5)
+    self.scene.attach_box("right_shoulder_link","lin",lin_pose,lin_scale,["right_upper_arm_link","right_shoulder_link","right_base_link","linear_actuator_link"])
     rospy.sleep(5)
     #self.scene.add_box("table",leg_pose,leg_scale)
     #rospy.sleep(2)

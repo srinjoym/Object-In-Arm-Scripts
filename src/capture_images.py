@@ -25,7 +25,7 @@ import json
 class CaptureImages:
 
   def __init__(self):
-    #rospy.wait_for_service('image_saver/save')
+    rospy.wait_for_service('image_saver/save')
     topic = 'visualization_marker_array'
     self.publisher = rospy.Publisher(topic, MarkerArray)
     rospy.sleep(2)
@@ -34,8 +34,10 @@ class CaptureImages:
     self.current_execution = 1
     self.lin_act_state = control_msgs.msg.JointTrajectoryControllerState()
     self.file_name=""
-    self.bounding_box_scale = [0.4,0.6,0.55]
-    self.bounding_box_coordinates = [0.7,-0.3,0.9] #relative to base link
+    #self.bounding_box_scale = [0.4,0.6,0.5]
+    #self.bounding_box_coordinates = [0.75,-0.3,0.9] #relative to base link
+    self.bounding_box_scale = [0.3,0.6,0.45]
+    self.bounding_box_coordinates = [0.85,-0.3,1] #relative to base link
     self.bounding_box_mps = [self.bounding_box_coordinates[0]+(self.bounding_box_scale[0]/2),
                             self.bounding_box_coordinates[1]+(self.bounding_box_scale[1]/2),
                             self.bounding_box_coordinates[2]+(self.bounding_box_scale[2]/2)
@@ -84,18 +86,19 @@ class CaptureImages:
       json.dump(failed_points_old, outfile)
 
   def capture_image(self):
-    # try:
-    #   image = rospy.ServiceProxy('image_saver/save', std_srvs.srv.Empty)
-    #   image()
-    # except rospy.ServiceException, e:
-    #   print "Service call failed: %s"%e
-    pass
+     try:
+       image = rospy.ServiceProxy('image_saver/save', std_srvs.srv.Empty)
+       image()
+     except rospy.ServiceException, e:
+       print "Service call failed: %s"%e
+    #pass
 
   def execute_movement(self):
     counter = 0
     image_counter = 0
     depth_ct = -1
-    
+    start_at = input("Counter Start?")
+    start_at = int(start_at)
     self.publisher.publish(publish_box(self.markerArray,self.bounding_box_coordinates,self.bounding_box_scale))
     
     x_limit = self.bounding_box_coordinates[0] + self.bounding_box_scale[0]
@@ -122,6 +125,10 @@ class CaptureImages:
             #for rotation in range(0,1,20):
               for angle in range(-45,46,45):
               #for angle in range(0,1,45):
+                print "global %i"%counter
+                if counter<start_at:
+                  counter+=1
+                  continue
                 if(counter not in self.failed_points_old):
                   
                   quaternion = self.calc_orientation(angle,0,rotation)
@@ -142,18 +149,19 @@ class CaptureImages:
                     
                     
                     print pose
-                    self.publish_point(pose,[0,1,0])
-                    self.capture_position(image_counter,True)
-                    #self.arm.group[0].execute(plan)
-                    image_counter+=1
-                    self.capture_image()
+                    
+                    
+                    if(self.arm.group[0].execute(plan)):
+                      print "image %i"%image_counter
+                      self.publish_point(pose,[0,1,0])
+                      self.capture_position(image_counter,True)
+                      image_counter+=1
+                      
+                      self.capture_image()
+                    else:
+                      self.failed_case(pose,counter)
                   else:
-                    #self.capture_position(counter,False)
-                    self.publish_point(pose,[1,0,0])
-                    self.failed_points_new.append(counter)
-                    print "failed pose"
-                    print pose
-                    #image_counter+=1
+                    self.failed_case(pose,counter)
                   
                 counter+=1
                 
@@ -162,6 +170,13 @@ class CaptureImages:
         x+=x_increment
 
   
+  def failed_case(self,pose,counter):
+    #self.capture_position(counter,False)
+     self.publish_point(pose,[1,0,0])
+     self.failed_points_new.append(counter)
+     print "failed pose"
+     print pose
+     #image_counter+=1
 
 
 def main():
@@ -186,9 +201,9 @@ def main():
     with open(capture_img.file_name, 'w+') as f:
       pass
     if not rospy.is_shutdown():
-      capture_img.get_failed()
+      #capture_img.get_failed()
       capture_img.execute_movement()
-      capture_img.add_failed()
+      #capture_img.add_failed()
       #capture_img.dump_failed()
       #capture_img.capture_position()
 
